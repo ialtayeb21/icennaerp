@@ -153,9 +153,10 @@ class BOM(WebsiteGenerator):
 		self.validate_operations()
 		self.calculate_cost()
 		self.update_stock_qty()
+		self.validate_scrap_items()
 		self.update_cost(update_parent=False, from_child_bom=True, update_hour_rate = False, save=False)
 		self.set_bom_level()
-		self.validate_scrap_items()
+
 
 	def get_context(self, context):
 		context.parents = [{'name': 'boms', 'title': _('All BOMs') }]
@@ -703,23 +704,6 @@ class BOM(WebsiteGenerator):
 				if not d.batch_size or d.batch_size <= 0:
 					d.batch_size = 1
 
-	def get_tree_representation(self) -> BOMTree:
-		"""Get a complete tree representation preserving order of child items."""
-		return BOMTree(self.name)
-
-	def set_bom_level(self, update=False):
-		levels = []
-
-		self.bom_level = 0
-		for row in self.items:
-			if row.bom_no:
-				levels.append(frappe.get_cached_value("BOM", row.bom_no, "bom_level") or 0)
-
-		if levels:
-			self.bom_level = max(levels) + 1
-
-		if update:
-			self.db_set("bom_level", self.bom_level)
 
 	def validate_scrap_items(self):
 		for item in self.scrap_items:
@@ -746,6 +730,24 @@ class BOM(WebsiteGenerator):
 
 			if msg:
 				frappe.throw(msg, title=_("Note"))
+
+	def get_tree_representation(self) -> BOMTree:
+		"""Get a complete tree representation preserving order of child items."""
+		return BOMTree(self.name)
+
+	def set_bom_level(self, update=False):
+		levels = []
+
+		self.bom_level = 0
+		for row in self.items:
+			if row.bom_no:
+				levels.append(frappe.get_cached_value("BOM", row.bom_no, "bom_level") or 0)
+
+		if levels:
+			self.bom_level = max(levels) + 1
+
+		if update:
+			self.db_set("bom_level", self.bom_level)
 
 def get_bom_item_rate(args, bom_doc):
 	if bom_doc.rm_cost_as_per == 'Valuation Rate':

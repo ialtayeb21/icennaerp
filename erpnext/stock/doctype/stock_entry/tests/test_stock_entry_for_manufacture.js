@@ -24,3 +24,4 @@ QUnit.test("test manufacture from bom", function(assert) {
 		() => done()
 	]);
 });
+

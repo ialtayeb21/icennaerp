@@ -86,7 +86,7 @@ class StockEntry(StockController):
 		self.validate_with_material_request()
 		self.validate_batch()
 		self.validate_inspection()
-		# self.validate_fg_completed_qty()
+		self.validate_fg_completed_qty()
 		self.validate_difference_account()
 		self.set_job_card_data()
 		self.set_purpose_for_stock_entry()
@@ -1707,6 +1707,7 @@ class StockEntry(StockController):
 			# Assumption: 1 finished item has 1 row.
 			d.transfer_qty -= process_loss_dict[d.item_code][0]
 			d.qty -= process_loss_dict[d.item_code][1]
+
 
 	def set_serial_no_batch_for_finished_good(self):
 		args = {}

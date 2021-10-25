@@ -9,12 +9,12 @@ Manufacturing
 Stock
 Support
 Utilities
-Shopping Cart
 Assets
 Portal
 Maintenance
 Education
 Regional
+Healthcare
 Restaurant
 Agriculture
 ERPNext Integrations
@@ -26,3 +26,4 @@ Communication
 Loan Management
 Payroll
 Telephony
+E-commerce

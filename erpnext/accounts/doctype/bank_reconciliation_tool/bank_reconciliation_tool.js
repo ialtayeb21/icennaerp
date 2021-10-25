@@ -15,7 +15,7 @@ frappe.ui.form.on("Bank Reconciliation Tool", {
 	},
 
 	refresh: function (frm) {
-		frappe.require("bank-reconciliation-tool.bundle.js", () =>
+		frappe.require("assets/js/bank-reconciliation-tool.min.js", () =>
 			frm.trigger("make_reconciliation_tool")
 		);
 		frm.upload_statement_button = frm.page.set_secondary_action(

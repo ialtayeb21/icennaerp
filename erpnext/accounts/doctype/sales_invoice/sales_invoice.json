@@ -27,6 +27,9 @@
   "due_date",
   "return_against",
   "amended_from",
+  "qr_information",
+  "qr_view",
+  "posting_date_and_time",
   "accounting_dimensions_section",
   "project",
   "dimension_col_break",
@@ -2019,6 +2022,25 @@
    "label": "Total Billing Hours",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "qr_information",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "QR Information"
+  },
+  {
+   "default": "Now",
+   "fieldname": "posting_date_and_time",
+   "fieldtype": "Datetime",
+   "label": "Posting Date and Time"
+  },
+  {
+   "fieldname": "qr_view",
+   "fieldtype": "HTML Editor",
+   "label": "QR View",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-file-text",
@@ -2031,12 +2053,11 @@
    "link_fieldname": "consolidated_invoice"
   }
  ],
- "modified": "2021-10-11 20:19:38.667508",
+ "modified": "2021-10-24 16:05:31.492980",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",
  "name_case": "Title Case",
- "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
