@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 import frappe
+import tlv8
 from frappe import _, msgprint, throw
 from frappe.contacts.doctype.address.address import get_address_display
 from frappe.model.mapper import get_mapped_doc
@@ -40,6 +41,7 @@ from erpnext.assets.doctype.asset.depreciation import (
 	post_depreciation_entries,
 )
 from erpnext.controllers.selling_controller import SellingController
+from erpnext.healthcare.utils import manage_invoice_submit_cancel
 from erpnext.projects.doctype.timesheet.timesheet import get_projectwise_timesheet_data
 from erpnext.setup.doctype.company.company import update_company_current_month_sales
 from erpnext.stock.doctype.batch.batch import set_batch_nos
@@ -259,6 +261,13 @@ class SalesInvoice(SellingController):
 		if self.redeem_loyalty_points and not self.is_consolidated and self.loyalty_points:
 			self.apply_loyalty_points()
 
+		# Healthcare Service Invoice.
+		domain_settings = frappe.get_doc('Domain Settings')
+		active_domains = [d.domain for d in domain_settings.active_domains]
+
+		if "Healthcare" in active_domains:
+			manage_invoice_submit_cancel(self, "on_submit")
+
 		self.process_common_party_accounting()
 
 	def validate_pos_return(self):
@@ -293,6 +302,8 @@ class SalesInvoice(SellingController):
 
 	def before_cancel(self):
 		self.check_if_consolidated_invoice()
+
+		super(SalesInvoice, self).before_cancel()
 		self.update_time_sheet(None)
 
 	def on_cancel(self):
@@ -341,6 +352,12 @@ class SalesInvoice(SellingController):
 
 		unlink_inter_company_doc(self.doctype, self.name, self.inter_company_invoice_reference)
 
+		# Healthcare Service Invoice.
+		domain_settings = frappe.get_doc('Domain Settings')
+		active_domains = [d.domain for d in domain_settings.active_domains]
+
+		if "Healthcare" in active_domains:
+			manage_invoice_submit_cancel(self, "on_cancel")
 		self.unlink_sales_invoice_from_timesheets()
 		self.ignore_linked_doctypes = ('GL Entry', 'Stock Ledger Entry', 'Repost Item Valuation')
 
@@ -887,10 +904,8 @@ class SalesInvoice(SellingController):
 			)
 
 	def make_tax_gl_entries(self, gl_entries):
-		enable_discount_accounting = cint(frappe.db.get_single_value('Accounts Settings', 'enable_discount_accounting'))
-
 		for tax in self.get("taxes"):
-			amount, base_amount = self.get_tax_amounts(tax, enable_discount_accounting)
+			amount, base_amount = self.get_tax_amounts(tax, self.enable_discount_accounting)
 
 			if flt(tax.base_tax_amount_after_discount_amount):
 				account_currency = get_account_currency(tax.account_head)
@@ -921,8 +936,6 @@ class SalesInvoice(SellingController):
 
 	def make_item_gl_entries(self, gl_entries):
 		# income account gl entries
-		enable_discount_accounting = cint(frappe.db.get_single_value('Accounts Settings', 'enable_discount_accounting'))
-
 		for item in self.get("items"):
 			if flt(item.base_net_amount, item.precision("base_net_amount")):
 				if item.is_fixed_asset:
@@ -956,7 +969,7 @@ class SalesInvoice(SellingController):
 						income_account = (item.income_account
 							if (not item.enable_deferred_revenue or self.is_return) else item.deferred_revenue_account)
 
-						amount, base_amount = self.get_amount_and_base_amount(item, enable_discount_accounting)
+						amount, base_amount = self.get_amount_and_base_amount(item, self.enable_discount_accounting)
 
 						account_currency = get_account_currency(income_account)
 						gl_entries.append(
@@ -1420,6 +1433,45 @@ class SalesInvoice(SellingController):
 			if points_to_redeem < 1: # since points_to_redeem is integer
 				break
 
+	# Healthcare
+	@frappe.whitelist()
+	def set_healthcare_services(self, checked_values):
+		self.set("items", [])
+		from erpnext.stock.get_item_details import get_item_details
+		for checked_item in checked_values:
+			item_line = self.append("items", {})
+			price_list, price_list_currency = frappe.db.get_values("Price List", {"selling": 1}, ['name', 'currency'])[0]
+			args = {
+				'doctype': "Sales Invoice",
+				'item_code': checked_item['item'],
+				'company': self.company,
+				'customer': frappe.db.get_value("Patient", self.patient, "customer"),
+				'selling_price_list': price_list,
+				'price_list_currency': price_list_currency,
+				'plc_conversion_rate': 1.0,
+				'conversion_rate': 1.0
+			}
+			item_details = get_item_details(args)
+			item_line.item_code = checked_item['item']
+			item_line.qty = 1
+			if checked_item['qty']:
+				item_line.qty = checked_item['qty']
+			if checked_item['rate']:
+				item_line.rate = checked_item['rate']
+			else:
+				item_line.rate = item_details.price_list_rate
+			item_line.amount = float(item_line.rate) * float(item_line.qty)
+			if checked_item['income_account']:
+				item_line.income_account = checked_item['income_account']
+			if checked_item['dt']:
+				item_line.reference_dt = checked_item['dt']
+			if checked_item['dn']:
+				item_line.reference_dn = checked_item['dn']
+			if checked_item['description']:
+				item_line.description = checked_item['description']
+
+		self.set_missing_values(for_validate = True)
+
 	def set_status(self, update=False, status=None, update_modified=True):
 		if self.is_new():
 			if self.get('amended_from'):
@@ -1427,6 +1479,7 @@ class SalesInvoice(SellingController):
 			return
 
 		outstanding_amount = flt(self.outstanding_amount, self.precision("outstanding_amount"))
+		total = get_total_in_party_account_currency(self)
 
 		if not status:
 			if self.docstatus == 2:
@@ -1434,9 +1487,9 @@ class SalesInvoice(SellingController):
 			elif self.docstatus == 1:
 				if self.is_internal_transfer():
 					self.status = 'Internal Transfer'
-				elif is_overdue(self):
+				elif is_overdue(self, total):
 					self.status = "Overdue"
-				elif 0 < outstanding_amount < flt(self.grand_total, self.precision("grand_total")):
+				elif 0 < outstanding_amount < total:
 					self.status = "Partly Paid"
 				elif outstanding_amount > 0 and getdate(self.due_date) >= getdate():
 					self.status = "Unpaid"
@@ -1463,27 +1516,42 @@ class SalesInvoice(SellingController):
 		if update:
 			self.db_set('status', self.status, update_modified = update_modified)
 
-def is_overdue(doc):
-	outstanding_amount = flt(doc.outstanding_amount, doc.precision("outstanding_amount"))
 
+def get_total_in_party_account_currency(doc):
+	total_fieldname = (
+		"grand_total"
+		if doc.disable_rounded_total
+		else "rounded_total"
+	)
+	if doc.party_account_currency != doc.currency:
+		total_fieldname = "base_" + total_fieldname
+
+	return flt(doc.get(total_fieldname), doc.precision(total_fieldname))
+
+def is_overdue(doc, total):
+	outstanding_amount = flt(doc.outstanding_amount, doc.precision("outstanding_amount"))
 	if outstanding_amount <= 0:
 		return
 
-	grand_total = flt(doc.grand_total, doc.precision("grand_total"))
-	nowdate = getdate()
-	if doc.payment_schedule:
-		# calculate payable amount till date
-		payable_amount = sum(
-			payment.payment_amount
-			for payment in doc.payment_schedule
-			if getdate(payment.due_date) < nowdate
-		)
+	today = getdate()
+	if doc.get('is_pos') or not doc.get('payment_schedule'):
+		return getdate(doc.due_date) < today
 
-		if (grand_total - outstanding_amount) < payable_amount:
-			return True
+	# calculate payable amount till date
+	payment_amount_field = (
+		"base_payment_amount"
+		if doc.party_account_currency != doc.currency
+		else "payment_amount"
+	)
 
-	elif getdate(doc.due_date) < nowdate:
-		return True
+	payable_amount = sum(
+		payment.get(payment_amount_field)
+		for payment in doc.payment_schedule
+		if getdate(payment.due_date) < today
+	)
+
+	return (total - outstanding_amount) < payable_amount
+
 
 def get_discounting_status(sales_invoice):
 	status = None
@@ -1921,6 +1989,19 @@ def update_address(doc, address_field, address_display_field, address_name):
 		doc.set(key, value)
 
 	doc.set(address_display_field, get_address_display(doc.get(address_field)))
+
+#wrote by elba7r@gmail.com
+@frappe.whitelist()
+def get_qr_information(seller_name,seller_tax_id,seller_date_time,seller_total,seller_vat):
+	structure = [
+		tlv8.Entry(1, seller_name),
+		tlv8.Entry(2, seller_tax_id),
+		tlv8.Entry(3, seller_date_time),
+		tlv8.Entry(4, seller_total),
+		tlv8.Entry(5, seller_vat),
+	]
+	bytes_data = tlv8.encode(structure)
+	return bytes_data
 
 @frappe.whitelist()
 def get_loyalty_programs(customer):

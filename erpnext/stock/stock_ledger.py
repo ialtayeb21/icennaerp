@@ -132,7 +132,7 @@ def make_entry(args, allow_negative_stock=False, via_landed_cost_voucher=False):
 	sle.submit()
 	return sle
 
-def repost_future_sle(args=None, voucher_type=None, voucher_no=None, allow_negative_stock=None, via_landed_cost_voucher=False, doc=None):
+def repost_future_sle(args=None, doc=None, voucher_type=None, voucher_no=None, allow_negative_stock=None, via_landed_cost_voucher=False):
 	if not args and voucher_type and voucher_no:
 		args = get_items_to_be_repost(voucher_type, voucher_no, doc)
 
@@ -140,15 +140,13 @@ def repost_future_sle(args=None, voucher_type=None, voucher_no=None, allow_negat
 
 	i = get_current_index(doc) or 0
 	while i < len(args):
-		validate_item_warehouse(args[i])
-
 		obj = update_entries_after({
-			'item_code': args[i].get('item_code'),
-			'warehouse': args[i].get('warehouse'),
-			'posting_date': args[i].get('posting_date'),
-			'posting_time': args[i].get('posting_time'),
-			'creation': args[i].get('creation'),
-			'distinct_item_warehouses': distinct_item_warehouses
+			"item_code": args[i].get('item_code'),
+			"warehouse": args[i].get('warehouse'),
+			"posting_date": args[i].get('posting_date'),
+			"posting_time": args[i].get('posting_time'),
+			"creation": args[i].get("creation"),
+			"distinct_item_warehouses": distinct_item_warehouses
 		}, allow_negative_stock=allow_negative_stock, via_landed_cost_voucher=via_landed_cost_voucher)
 
 		distinct_item_warehouses[(args[i].get('item_code'), args[i].get('warehouse'))].reposting_status = True
@@ -169,12 +167,6 @@ def repost_future_sle(args=None, voucher_type=None, voucher_no=None, allow_negat
 
 	if doc and args:
 		update_args_in_repost_item_valuation(doc, i, args, distinct_item_warehouses)
-
-def validate_item_warehouse(args):
-	for field in ['item_code', 'warehouse', 'posting_date', 'posting_time']:
-		if not args.get(field):
-			validation_msg = f'The field {frappe.unscrub(args.get(field))} is required for the reposting'
-			frappe.throw(_(validation_msg))
 
 def update_args_in_repost_item_valuation(doc, index, args, distinct_item_warehouses):
 	frappe.db.set_value(doc.doctype, doc.name, {

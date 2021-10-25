@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
-from erpnext.erpnext_integrations.doctype.taxjar_settings.taxjar_settings import add_permissions
+from erpnext.regional.united_states.setup import add_permissions
 
 
 def execute():
@@ -11,12 +11,7 @@ def execute():
 	if not company:
 		return
 
-	TAXJAR_CREATE_TRANSACTIONS = frappe.db.get_single_value("TaxJar Settings", "taxjar_create_transactions")
-	TAXJAR_CALCULATE_TAX = frappe.db.get_single_value("TaxJar Settings", "taxjar_calculate_tax")
-	TAXJAR_SANDBOX_MODE = frappe.db.get_single_value("TaxJar Settings", "is_sandbox")
-
-	if (not TAXJAR_CREATE_TRANSACTIONS and not TAXJAR_CALCULATE_TAX and not TAXJAR_SANDBOX_MODE):
-		return
+	frappe.reload_doc("regional", "doctype", "product_tax_category")
 
 	custom_fields = {
 		'Sales Invoice Item': [
@@ -34,4 +29,4 @@ def execute():
 	}
 	create_custom_fields(custom_fields, update=True)
 	add_permissions()
-	frappe.enqueue('erpnext.erpnext_integrations.doctype.taxjar_settings.taxjar_settings.add_product_tax_categories', now=True)
+	frappe.enqueue('erpnext.regional.united_states.setup.add_product_tax_categories', now=True)

@@ -188,12 +188,12 @@ class Customer(TransactionBase):
 					address.append('links', dict(link_doctype='Customer', link_name=self.name))
 					address.save(ignore_permissions=self.flags.ignore_permissions)
 
-			lead = frappe.db.get_value("Lead", self.lead_name, ["company_name", "lead_name", "email_id", "phone", "mobile_no", "gender", "salutation"], as_dict=True)
+			lead = frappe.db.get_value("Lead", self.lead_name, ["organization_lead", "lead_name", "email_id", "phone", "mobile_no", "gender", "salutation"], as_dict=True)
 
 			if not lead.lead_name:
 				frappe.throw(_("Please mention the Lead Name in Lead {0}").format(self.lead_name))
 
-			if lead.company_name:
+			if lead.organization_lead:
 				contact_names = frappe.get_all('Dynamic Link', filters={
 									"parenttype":"Contact",
 									"link_doctype":"Lead",
@@ -293,30 +293,6 @@ class Customer(TransactionBase):
 				_("Multiple Loyalty Programs found for Customer {}. Please select manually.")
 				.format(frappe.bold(self.customer_name))
 			)
-
-	def create_onboarding_docs(self, args):
-		defaults = frappe.defaults.get_defaults()
-		company = defaults.get('company') or \
-			frappe.db.get_single_value('Global Defaults', 'default_company')
-
-		for i in range(1, args.get('max_count')):
-			customer = args.get('customer_name_' + str(i))
-			if customer:
-				try:
-					doc = frappe.get_doc({
-						'doctype': self.doctype,
-						'customer_name': customer,
-						'customer_type': 'Company',
-						'customer_group': _('Commercial'),
-						'territory': defaults.get('country'),
-						'company': company
-					}).insert()
-
-					if args.get('customer_email_' + str(i)):
-						create_contact(customer, self.doctype,
-							doc.name, args.get("customer_email_" + str(i)))
-				except frappe.NameError:
-					pass
 
 def create_contact(contact, party_type, party, email):
 	"""Create contact based on given contact name"""

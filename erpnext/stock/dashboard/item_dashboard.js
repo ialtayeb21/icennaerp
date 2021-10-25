@@ -1,11 +1,11 @@
 frappe.provide('erpnext.stock');
 
-erpnext.stock.ItemDashboard = class ItemDashboard {
-	constructor(opts) {
+erpnext.stock.ItemDashboard = Class.extend({
+	init: function (opts) {
 		$.extend(this, opts);
 		this.make();
-	}
-	make() {
+	},
+	make: function () {
 		var me = this;
 		this.start = 0;
 		if (!this.sort_by) {
@@ -79,9 +79,9 @@ erpnext.stock.ItemDashboard = class ItemDashboard {
 			me.refresh();
 		});
 
-	}
-	refresh() {
-		if(this.before_refresh) {
+	},
+	refresh: function () {
+		if (this.before_refresh) {
 			this.before_refresh();
 		}
 
@@ -104,9 +104,9 @@ erpnext.stock.ItemDashboard = class ItemDashboard {
 				me.render(r.message);
 			}
 		});
-	}
-	render(data) {
-		if (this.start===0) {
+	},
+	render: function (data) {
+		if (this.start === 0) {
 			this.max_count = 0;
 			this.result.empty();
 		}
@@ -141,11 +141,11 @@ erpnext.stock.ItemDashboard = class ItemDashboard {
 			$(`<div class='text-muted' style='margin: 20px 5px;'>
 				${message} </div>`).appendTo(this.result);
 		}
-	}
+	},
 
-	get_item_dashboard_data(data, max_count, show_item) {
-		if(!max_count) max_count = 0;
-		if(!data) data = [];
+	get_item_dashboard_data: function (data, max_count, show_item) {
+		if (!max_count) max_count = 0;
+		if (!data) data = [];
 
 		data.forEach(function (d) {
 			d.actual_or_pending = d.projected_qty + d.reserved_qty + d.reserved_qty_for_production + d.reserved_qty_for_sub_contract;
@@ -170,9 +170,9 @@ erpnext.stock.ItemDashboard = class ItemDashboard {
 			can_write: can_write,
 			show_item: show_item || false
 		};
-	}
+	},
 
-	get_capacity_dashboard_data(data) {
+	get_capacity_dashboard_data: function (data) {
 		if (!data) data = [];
 
 		data.forEach(function (d) {
@@ -189,7 +189,7 @@ erpnext.stock.ItemDashboard = class ItemDashboard {
 			can_write: can_write,
 		};
 	}
-};
+});
 
 erpnext.stock.move_item = function (item, source, target, actual_qty, rate, callback) {
 	var dialog = new frappe.ui.Dialog({

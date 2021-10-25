@@ -168,8 +168,13 @@ class AccountsController(TransactionBase):
 
 		validate_regional(self)
 
+		validate_einvoice_fields(self)
+
 		if self.doctype != 'Material Request':
 			apply_pricing_rule_on_transaction(self)
+
+	def before_cancel(self):
+		validate_einvoice_fields(self)
 
 	def on_trash(self):
 		# delete sl and gl entries on deletion of transaction
@@ -1038,9 +1043,9 @@ class AccountsController(TransactionBase):
 		frappe.throw(_("Cannot overbill for Item {0} in row {1} more than {2}. To allow over-billing, please set allowance in Accounts Settings")
 			.format(item.item_code, item.idx, max_allowed_amt))
 
-	def get_company_default(self, fieldname, ignore_validation=False):
+	def get_company_default(self, fieldname):
 		from erpnext.accounts.utils import get_company_default
-		return get_company_default(self.company, fieldname, ignore_validation=ignore_validation)
+		return get_company_default(self.company, fieldname)
 
 	def get_stock_items(self):
 		stock_items = []
@@ -1686,17 +1691,58 @@ def get_advance_payment_entries(party_type, party, party_account, order_doctype,
 
 def update_invoice_status():
 	"""Updates status as Overdue for applicable invoices. Runs daily."""
+	today = getdate()
 
 	for doctype in ("Sales Invoice", "Purchase Invoice"):
 		frappe.db.sql("""
-			update `tab{}` as dt set dt.status = 'Overdue'
-			where dt.docstatus = 1
-				and dt.status != 'Overdue'
-				and dt.outstanding_amount > 0
-				and (dt.grand_total - dt.outstanding_amount) <
-					(select sum(payment_amount) from `tabPayment Schedule` as ps
-						where ps.parent = dt.name and ps.due_date < %s)
-		""".format(doctype), getdate())
+			UPDATE `tab{doctype}` invoice SET invoice.status = 'Overdue'
+			WHERE invoice.docstatus = 1
+				AND invoice.status REGEXP '^Unpaid|^Partly Paid'
+				AND invoice.outstanding_amount > 0
+				AND (
+						{or_condition}
+						(
+							(
+								CASE
+									WHEN invoice.party_account_currency = invoice.currency
+									THEN (
+										CASE
+											WHEN invoice.disable_rounded_total
+											THEN invoice.grand_total
+											ELSE invoice.rounded_total
+										END
+									)
+									ELSE (
+										CASE
+											WHEN invoice.disable_rounded_total
+											THEN invoice.base_grand_total
+											ELSE invoice.base_rounded_total
+										END
+									)
+								END
+							) - invoice.outstanding_amount
+						) < (
+							SELECT SUM(
+								CASE
+									WHEN invoice.party_account_currency = invoice.currency
+									THEN ps.payment_amount
+									ELSE ps.base_payment_amount
+								END
+							)
+							FROM `tabPayment Schedule` ps
+							WHERE ps.parent = invoice.name
+								AND ps.due_date < %(today)s
+						)
+					)
+		""".format(
+				doctype=doctype,
+				or_condition=(
+					"invoice.is_pos AND invoice.due_date < %(today)s OR"
+					if doctype == "Sales Invoice"
+					else ""
+				)
+			), {"today": today}
+		)
 
 @frappe.whitelist()
 def get_payment_terms(terms_template, posting_date=None, grand_total=None, base_grand_total=None, bill_date=None):
@@ -2095,4 +2141,8 @@ def update_child_qty_rate(parent_doctype, trans_items, parent_doctype_name, chil
 
 @erpnext.allow_regional
 def validate_regional(doc):
+	pass
+
+@erpnext.allow_regional
+def validate_einvoice_fields(doc):
 	pass

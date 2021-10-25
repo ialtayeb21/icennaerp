@@ -131,3 +131,4 @@ def get_filter_conditions(filters: Filters) -> QueryArgs:
 			{"work_order_filter": f"AND wo.name='{work_order_name}'"}
 		)
 	return filter_conditions
+

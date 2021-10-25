@@ -16,7 +16,7 @@ erpnext.accounts.bank_reconciliation.DialogManager = class DialogManager {
 				doctype: "Bank Transaction",
 				filters: { name: this.bank_transaction_name },
 				fieldname: [
-					"date as reference_date",
+					"date",
 					"deposit",
 					"withdrawal",
 					"currency",

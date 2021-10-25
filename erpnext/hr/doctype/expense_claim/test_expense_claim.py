@@ -237,3 +237,4 @@ def make_payment_entry(expense_claim, payable_account, amt):
 	pe.references[0].allocated_amount = amt
 	pe.insert()
 	pe.submit()
+

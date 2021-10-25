@@ -4,7 +4,7 @@
 
 from __future__ import unicode_literals
 
-from erpnext.controllers.employee_boarding_controller import EmployeeBoardingController
+from erpnext.hr.utils import EmployeeBoardingController
 
 
 class EmployeeSeparation(EmployeeBoardingController):

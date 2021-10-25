@@ -905,3 +905,4 @@ def delete_gst_settings_for_company(doc, method):
 		gst_settings.remove(d)
 
 	gst_settings.save()
+

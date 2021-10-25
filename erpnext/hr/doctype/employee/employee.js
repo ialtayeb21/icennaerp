@@ -2,42 +2,46 @@
 // License: GNU General Public License v3. See license.txt
 
 frappe.provide("erpnext.hr");
-erpnext.hr.EmployeeController = class EmployeeController extends frappe.ui.form.Controller {
-	setup() {
-		this.frm.fields_dict.user_id.get_query = function(doc, cdt, cdn) {
+erpnext.hr.EmployeeController = frappe.ui.form.Controller.extend({
+	setup: function() {
+		this.frm.fields_dict.user_id.get_query = function() {
 			return {
 				query: "frappe.core.doctype.user.user.user_query",
-				filters: {ignore_user_type: 1}
-			}
-		}
-		this.frm.fields_dict.reports_to.get_query = function(doc, cdt, cdn) {
-			return { query: "erpnext.controllers.queries.employee_query"} }
-	}
+				filters: {
+					ignore_user_type: 1
+				}
+			};
+		};
+		this.frm.fields_dict.reports_to.get_query = function() {
+			return {
+				query: "erpnext.controllers.queries.employee_query"
+			};
+		};
+	},
 
-	refresh() {
+	refresh: function() {
 		erpnext.toggle_naming_series();
-	}
+	},
 
-	date_of_birth() {
+	date_of_birth: function() {
 		return cur_frm.call({
 			method: "get_retirement_date",
 			args: {
 				date_of_birth: this.frm.doc.date_of_birth
 			}
 		});
-	}
+	},
 
-	salutation() {
+	salutation: function() {
 		if (this.frm.doc.salutation) {
 			this.frm.set_value("gender", {
 				"Mr": "Male",
 				"Ms": "Female"
-			}[this.frm.doc.salutation]);
+			} [this.frm.doc.salutation]);
 		}
-	}
+	},
 
-};
-
+});
 frappe.ui.form.on('Employee', {
 	setup: function (frm) {
 		frm.set_query("leave_policy", function() {
