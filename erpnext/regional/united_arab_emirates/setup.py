@@ -1,5 +1,6 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
+# -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
 
@@ -68,13 +69,13 @@ def make_custom_fields():
 		dict(fieldname='tax_code', label='Tax Code',
 			fieldtype='Read Only', fetch_from='item_code.tax_code', insert_after='description',
 			allow_on_submit=1, print_hide=1),
-		dict(fieldname='tax_rate', label='Tax Rate',
+		dict(fieldname='tax_rate', label='Tax Rate / نسبة الضريبة %',
 			fieldtype='Float', insert_after='tax_code',
 			print_hide=1, hidden=1, read_only=1),
-		dict(fieldname='tax_amount', label='Tax Amount',
+		dict(fieldname='tax_amount', label='Tax Amount / قيمة الضريبة',
 			fieldtype='Currency', insert_after='tax_rate',
 			print_hide=1, hidden=1, read_only=1, options="currency"),
-		dict(fieldname='total_amount', label='Total Amount',
+		dict(fieldname='total_amount', label='Total Including VAT / المجموع شامل ضريبة القيمة المضافة',
 			fieldtype='Currency', insert_after='tax_amount',
 			print_hide=1, hidden=1, read_only=1, options="currency"),
 	]
