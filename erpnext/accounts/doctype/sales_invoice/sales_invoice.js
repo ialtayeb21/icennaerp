@@ -16,26 +16,6 @@ erpnext.accounts.SalesInvoiceController = erpnext.selling.SellingController.exte
 	onload: function() {
 		var me = this;
 		this._super();
-                /// wrote by elba7r
-		if(this.frm.doc.docstatus == 1 && this.frm.doc.company && this.frm.doc.company_tax_id && this.frm.doc.posting_date_and_time && this.frm.doc.grand_total && this.frm.doc.total_taxes_and_charges) {
-			frappe.call({
-				"method": "erpnext.accounts.doctype.sales_invoice.sales_invoice.get_qr_information",
-				"args": {
-					"seller_name": this.frm.doc.company,
-					"seller_tax_id": this.frm.doc.company_tax_id,
-					"seller_date_time": this.frm.doc.posting_date_and_time,
-					"seller_total": this.frm.doc.grand_total,
-					"seller_vat": this.frm.doc.total_taxes_and_charges
-				},
-				callback: function(r) {
-					if(r.message && r.message.length > 1) {
-						me.frm.doc.qr_view = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='+r.message + '"'+" height='100' width='100'></img>";
-						me.frm.refresh_fields();
-					}
-				}
-			});
-		}		
-
 		this.frm.ignore_doctypes_on_cancel_all = ['POS Invoice', 'Timesheet', 'POS Invoice Merge Log', 'POS Closing Entry'];
 		if(!this.frm.doc.__islocal && !this.frm.doc.customer && this.frm.doc.debit_to) {
 			// show debit_to in print format

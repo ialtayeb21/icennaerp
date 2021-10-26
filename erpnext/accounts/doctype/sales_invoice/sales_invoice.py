@@ -204,6 +204,17 @@ class SalesInvoice(SellingController):
 
 	def before_save(self):
 		set_account_for_mode_of_payment(self)
+		#wrote by elba7r
+		structure = [
+			tlv8.Entry(1, str(self.company)),
+			tlv8.Entry(2, str(self.company_tax_id)),
+			tlv8.Entry(3, str(self.posting_date_and_time)),
+			tlv8.Entry(4, str(self.grand_total)),
+			tlv8.Entry(5, str(self.total_taxes_and_charges)),
+		]
+		bytes_data = tlv8.encode(structure,"UTF-8")
+		self.qr_information = str(bytes_data)
+
 
 	def on_submit(self):
 		self.validate_pos_paid_amount()
@@ -1989,19 +2000,6 @@ def update_address(doc, address_field, address_display_field, address_name):
 		doc.set(key, value)
 
 	doc.set(address_display_field, get_address_display(doc.get(address_field)))
-
-#wrote by elba7r@gmail.com
-@frappe.whitelist()
-def get_qr_information(seller_name,seller_tax_id,seller_date_time,seller_total,seller_vat):
-	structure = [
-		tlv8.Entry(1, seller_name),
-		tlv8.Entry(2, seller_tax_id),
-		tlv8.Entry(3, seller_date_time),
-		tlv8.Entry(4, seller_total),
-		tlv8.Entry(5, seller_vat),
-	]
-	bytes_data = tlv8.encode(structure)
-	return bytes_data
 
 @frappe.whitelist()
 def get_loyalty_programs(customer):

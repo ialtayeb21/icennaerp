@@ -2027,8 +2027,9 @@
    "allow_on_submit": 1,
    "fieldname": "qr_information",
    "fieldtype": "Data",
-   "hidden": 1,
-   "label": "QR Information"
+   "label": "QR Information",
+   "length": 500,
+   "read_only": 1
   },
   {
    "default": "Now",
@@ -2037,10 +2038,11 @@
    "label": "Posting Date and Time"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "qr_view",
    "fieldtype": "HTML Editor",
-   "label": "QR View",
-   "read_only": 1
+   "hidden": 1,
+   "label": "QR View"
   }
  ],
  "icon": "fa fa-file-text",
@@ -2053,7 +2055,7 @@
    "link_fieldname": "consolidated_invoice"
   }
  ],
- "modified": "2021-10-24 16:05:31.492980",
+ "modified": "2021-10-25 20:19:48.667851",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",
