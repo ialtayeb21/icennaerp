@@ -301,6 +301,7 @@
    "depends_on": "eval:doc.docstatus==0",
    "fieldname": "set_posting_time",
    "fieldtype": "Check",
+   "hidden": 1,
    "label": "Edit Posting Date and Time",
    "print_hide": 1
   },
@@ -1414,17 +1415,14 @@
  "idx": 204,
  "is_submittable": 1,
  "links": [],
- "modified": "2021-10-12 20:55:16.145651",
+ "modified": "2021-11-01 15:05:01.926288",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Purchase Invoice",
  "name_case": "Title Case",
- "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
-   "amend": 1,
-   "cancel": 1,
    "create": 1,
    "email": 1,
    "print": 1,
@@ -1443,10 +1441,7 @@
    "role": "Purchase User"
   },
   {
-   "amend": 1,
-   "cancel": 1,
    "create": 1,
-   "delete": 1,
    "email": 1,
    "print": 1,
    "read": 1,
